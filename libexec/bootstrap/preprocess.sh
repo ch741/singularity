@@ -96,10 +96,11 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
             done
         fi
         # Retrieve all fields from temporary definition file
-        SINGULARITY_TMPBOOTSTRAP=`singularity_keys_get "BootStrap" "$SINGULARITY_TMPDEF"`
-        TMPOSVERSION=`singularity_keys_get "OSVersion" "$SINGULARITY_TMPDEF"`
-        TMPMIRROR=`singularity_keys_get "MirrorURL" "$SINGULARITY_TMPDEF"`
-        TMPUPDATEURL=`singularity_keys_get "UpdateURL" "$SINGULARITY_TMPDEF"`
+        SINGULARITY_TMPBOOTSTRAP=`singularity_key_get "BootStrap" "$SINGULARITY_TMPDEF"`
+        TMPOSVERSION=`singularity_key_get "OSVersion" "$SINGULARITY_TMPDEF"`
+        TMPMIRROR=`singularity_key_get "MirrorURL" "$SINGULARITY_TMPDEF"`
+        TMPUPDATEURL=`singularity_key_get "UpdateURL" "$SINGULARITY_TMPDEF"`
+        TMPINCLUDES=`singularity_keys_get "Include" "$SINGULARITY_TMPDEF"`
         TMPSETUP=`singularity_section_get "setup" "$SINGULARITY_TMPDEF"`
         TMPRUN=`singularity_section_get "runscript" "$SINGULARITY_TMPDEF"`
         TMPPOST=`singularity_section_get "post" "$SINGULARITY_TMPDEF"`
@@ -108,28 +109,31 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
         # BootStrap system and OS version are only used from the child definition if they
         # don't exist already
         if ! [ -n "$SINGULARITY_TMPBOOTSTRAP" ]; then
-            SINGULARITY_BOOTSTRAP=`singularity_keys_get "BootStrap" "$SINGULARITY_BUILDDEF"`
+            SINGULARITY_BOOTSTRAP=`singularity_key_get "BootStrap" "$SINGULARITY_BUILDDEF"`
         else
             SINGULARITY_BOOTSTRAP="$SINGULARITY_TMPBOOTSTRAP"
         fi
+
         if ! [ -n "$TMPOSVERSION" ]; then
-            OSVERSION=`singularity_keys_get "OSVersion" "$SINGULARITY_BUILDDEF"`
+            OSVERSION=`singularity_key_get "OSVersion" "$SINGULARITY_BUILDDEF"`
         else
             OSVERSION="$TMPOSVERSION"
         fi
 
-        MIRROR=`singularity_keys_get "MirrorURL" "$SINGULARITY_BUILDDEF"`
+        MIRROR=`singularity_key_get "MirrorURL" "$SINGULARITY_BUILDDEF"`
         if ! [ -n "$MIRROR" ]; then
             if [ -n "$TMPMIRROR" ]; then
                 MIRROR="$TMPMIRROR"
             fi
         fi
-        UPDATEURL=`singularity_keys_get "UpdateURL" "$SINGULARITY_BUILDDEF"`
+        UPDATEURL=`singularity_key_get "UpdateURL" "$SINGULARITY_BUILDDEF"`
         if ! [ -n "$UPDATEURL" ]; then
             if [ -n "$TMPUPDATEURL" ]; then
                 UPDATEURL="$TMPUPDATEURL"
             fi
         fi
+        INCLUDES=`singularity_key_get "Include" "$SINGULARITY_BUILDDEF"`
+        INCLUDES="$TMPINCLUDES $INCLUDES"
 
         SETUP=`singularity_section_get "setup" "$SINGULARITY_BUILDDEF"`
         RUN=`singularity_section_get "runscript" "$SINGULARITY_BUILDDEF"`
@@ -144,12 +148,11 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
         echo "OSVersion: $OSVERSION" >> $SINGULARITY_TMPDEF
         echo "MirrorURL: $MIRROR" >> $SINGULARITY_TMPDEF
         echo "UpdateURL: $UPDATEURL" >> $SINGULARITY_TMPDEF
+        echo "Include: $INCLUDES" >> $SINGULARITY_TMPDEF
         echo -e "%runscript" >> $SINGULARITY_TMPDEF
-        echo -e $RUN >> $SINGULARITY_TMPDEF
+        echo -e "$RUN" >> $SINGULARITY_TMPDEF
         echo "%post" >> $SINGULARITY_TMPDEF
-        echo -e $POST >> $SINGULARITY_TMPDEF
-#        cat $SINGULARITY_BUILDDEF >> $SINGULARITY_TMPDEF
-#       sed '/Inherit/d' $SINGULARITY_BUILDDEF >> $SINGULARITY_TMPDEF
+        echo -e "$POST" >> $SINGULARITY_TMPDEF
     else
         message ERROR "Build Definition file not found: $SINGULARITY_BUILDDEF\n"
         exit 1
