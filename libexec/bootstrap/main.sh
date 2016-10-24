@@ -37,11 +37,18 @@ fi
 SINGULARITY_BUILDDEF="${1:-}"
 shift
 SINGULARITY_TMPDIR=`mktemp -d /tmp/singularity-bootstrap.XXXXXXX`
+
+# Create a temporary definition file, if the definition inherits from other
+# definitions all definitions are processed and collected into this.
+SINGULARITY_TMPDEF="${SINGULARITY_BUILDDEF}.tmp"
+# The inheritance list is used for avoiding cyclic inheritance.
+SINGULARITY_INHERITLIST=$SINGULARITY_BUILDDEF:$SINGULARITY_TMPDEF
 PATH=/bin:/sbin:$PATH
 HOME=/root
 RETVAL=0
 
-export SINGULARITY_TMPDIR SINGULARITY_BUILDDEF
+export SINGULARITY_TMPDIR SINGULARITY_BUILDDEF 
+export SINGULARITY_TMPDEF SINGULARITY_INHERITLIST
 
 if [ -z "${SINGULARITY_BUILDDEF:-}" ]; then
     BOOTSTRAP_VERSION="2"
@@ -51,6 +58,19 @@ elif grep -q "^DistType " "${SINGULARITY_BUILDDEF:-}"; then
     BOOTSTRAP_VERSION="1"
 else
     BOOTSTRAP_VERSION="2"
+fi
+
+if [[ "${BOOTSTRAP_VERSION}" == "2" ]]; then
+    if [ -x "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" ]; then
+        if [ -f $SINGULARITY_TMPDEF ]; then
+            > $SINGULARITY_TMPDEF
+        else
+            touch $SINGULARITY_TMPDEF
+        fi
+        eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$SINGULARITY_BUILDDEF" "$SINGULARITY_TMPDEF"
+        RETVAL=$?
+        export SINGULARITY_BUILDDEF=$SINGULARITY_TMPDEF
+    fi
 fi
 
 if [ -n "${BOOTSTRAP_VERSION:-}" ]; then
