@@ -79,8 +79,8 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
             message ERROR "No temporary definition passed\n"
             exit 1
         fi
+        # Check for inherit command, if there is and the files are valid preprocess that first.
         INHERITDEFS=`singularity_keys_get "Inherit" "$SINGULARITY_BUILDDEF"`
-
         if [ -n "$INHERITDEFS" ]; then
             for DEF in $INHERITDEFS; do
                 if [[ $SINGULARITY_INHERITLIST == *"$DEF"* ]]; then
@@ -161,5 +161,5 @@ else
     message 1 "No bootstrap definition passed, updating container\n"
 fi
 
-message 1 "Done preprocessing $SINGULARITY_BUILDDEF.\n"
+message 1 "Done preprocessing $SINGULARITY_BUILDDEF\n"
 exit 0

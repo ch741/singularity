@@ -60,6 +60,7 @@ else
     BOOTSTRAP_VERSION="2"
 fi
 
+# At the moment preprocessing takes care of inheriting from other bootstrap definitions. 
 if [[ "${BOOTSTRAP_VERSION}" == "2" ]]; then
     if [ -x "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" ]; then
         if [ -f $SINGULARITY_TMPDEF ]; then
@@ -68,8 +69,9 @@ if [[ "${BOOTSTRAP_VERSION}" == "2" ]]; then
             touch $SINGULARITY_TMPDEF
         fi
         eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$SINGULARITY_BUILDDEF" "$SINGULARITY_TMPDEF"
-        RETVAL=$?
-        export SINGULARITY_BUILDDEF=$SINGULARITY_TMPDEF
+        if [[ "${RETVAL}" == "0" ]]; then
+          export SINGULARITY_BUILDDEF=$SINGULARITY_TMPDEF
+        fi
     fi
 fi
 
