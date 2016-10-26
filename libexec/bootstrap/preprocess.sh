@@ -80,23 +80,28 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
             exit 1
         fi
         # Check for inherit command, if there is and the files are valid preprocess that first.
+        SINGULARITY_TMPBOOTSTRAP=`singularity_key_get "BootStrap" "$SINGULARITY_TMPDEF"`
         INHERITDEFS=`singularity_keys_get "Inherit" "$SINGULARITY_BUILDDEF"`
         if [ -n "$INHERITDEFS" ]; then
-            for DEF in $INHERITDEFS; do
-                if [[ $SINGULARITY_INHERITLIST == *"$DEF"* ]]; then
-                    message ERROR "Cyclic inheritance detected. $DEF is already part of the inheritance tree.\n"
-                    exit 1
-                fi
-                if [ -f $DEF ]; then
-                    eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$DEF" "$SINGULARITY_TMPDEF"
-                else
-                    message ERROR "Inherited Definition file not found: $DEF\n"
-                    exit 1
-                fi
-            done
+            if [[ "$SINGULARITY_TMPBOOTSTRAP" != "docker" ]]; then
+                for DEF in $INHERITDEFS; do
+                    if [[ $SINGULARITY_INHERITLIST == *"$DEF"* ]]; then
+                        message ERROR "Cyclic inheritance detected. $DEF is already part of the inheritance tree.\n"
+                        exit 1
+                    fi
+                    if [ -f $DEF ]; then
+                        eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$DEF" "$SINGULARITY_TMPDEF"
+                    else
+                        message ERROR "Inherited Definition file not found: $DEF\n"
+                        exit 1
+                    fi
+                done
+            else
+                message ERROR "Inheritance not supported with docker files.\n"
+                exit 1
+            fi
         fi
         # Retrieve all fields from temporary definition file
-        SINGULARITY_TMPBOOTSTRAP=`singularity_key_get "BootStrap" "$SINGULARITY_TMPDEF"`
         TMPOSVERSION=`singularity_key_get "OSVersion" "$SINGULARITY_TMPDEF"`
         TMPMIRROR=`singularity_key_get "MirrorURL" "$SINGULARITY_TMPDEF"`
         TMPUPDATEURL=`singularity_key_get "UpdateURL" "$SINGULARITY_TMPDEF"`
