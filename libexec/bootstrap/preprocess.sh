@@ -89,12 +89,23 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
                         message ERROR "Cyclic inheritance detected. $DEF is already part of the inheritance tree.\n"
                         exit 1
                     fi
-                    if [ -f $DEF ]; then
+                    #TODO Verify URL and downloaded file
+                    URL=`echo $DEF | egrep '(https?|ftp)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'`
+                    if [ -n $URL ]; then
+                        eval "curl -f -k -s -S -o remote.def" "$URL"
+                        REMOTEDEF="remote.def"
+                        if [ -f $REMOTEDEF ]; then
+                            eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$REMOTEDEF" "$SINGULARITY_TMPDEF"
+                        else
+                            message ERROR "Remote definition failed to download"
+                        fi 
+                    elif [ -f $DEF ]; then
                         eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$DEF" "$SINGULARITY_TMPDEF"
                     else
                         message ERROR "Inherited Definition file not found: $DEF\n"
                         exit 1
                     fi
+                    URL=''
                 done
             else
                 message ERROR "Inheritance not supported with docker files.\n"
