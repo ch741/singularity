@@ -65,7 +65,10 @@ if [[ "${BOOTSTRAP_VERSION}" == "2" ]]; then
     if [ -x "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" ]; then
         eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$SINGULARITY_BUILDDEF"
         if [[ "${RETVAL}" == "0" ]]; then
-          export SINGULARITY_BUILDDEF="${SINGULARITY_BUILDDEF}.tmp"
+            export SINGULARITY_BUILDDEF="${SINGULARITY_BUILDDEF}.tmp"
+        else
+            message ERROR "Preprocessing failed."
+            exit 1
         fi
     fi
 fi

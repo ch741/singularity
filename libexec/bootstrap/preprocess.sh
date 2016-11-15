@@ -54,7 +54,6 @@ export LC_ALL LANG TERM DEBIAN_FRONTEND
 
 if [ -n "$1" ]; then
     SINGULARITY_BUILDDEF="$1"
-    echo $SINGULARITY_BUILDDEF
 else
     message ERROR "Build definition not passed\n"
     exit 1
@@ -154,6 +153,98 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
         do
             message WARNING "Package $PKG is included multiple times"
         done
+=======
+        if [ -n "${SINGULARITY_TMPDEF:-}" ]; then
+            if [ -f "$SINGULARITY_TMPDEF" ]; then
+                message 1 "Temporary definition file found: $SINGULARITY_TMPDEF\n"
+            else
+                message ERROR "Temporary definition file not found: $SINGULARITY_TMPDEF\n"
+                exit 1
+            fi
+        else
+            message ERROR "No temporary definition passed\n"
+            exit 1
+        fi
+        # Check for inherit command, if there is and the files are valid preprocess that first.
+        SINGULARITY_TMPBOOTSTRAP=`singularity_key_get "BootStrap" "$SINGULARITY_TMPDEF"`
+        INHERITDEFS=`singularity_keys_get "Inherit" "$SINGULARITY_BUILDDEF"`
+        if [ -n "$INHERITDEFS" ]; then
+            if [[ "$SINGULARITY_TMPBOOTSTRAP" != "docker" ]]; then
+                for DEF in $INHERITDEFS; do
+                    if [[ $SINGULARITY_INHERITLIST == *"$DEF"* ]]; then
+                        message ERROR "Cyclic inheritance detected. $DEF is already part of the inheritance tree.\n"
+                        exit 1
+                    fi
+                    if [ -f $DEF ]; then
+                        eval "$SINGULARITY_libexecdir/singularity/bootstrap/preprocess.sh" "$DEF" "$SINGULARITY_TMPDEF"
+                    else
+                        message ERROR "Inherited Definition file not found: $DEF\n"
+                        exit 1
+                    fi
+                done
+            else
+                message ERROR "Inheritance not supported with docker files.\n"
+                exit 1
+            fi
+        fi
+        # Retrieve all fields from temporary definition file
+        TMPOSVERSION=`singularity_key_get "OSVersion" "$SINGULARITY_TMPDEF"`
+        TMPMIRROR=`singularity_key_get "MirrorURL" "$SINGULARITY_TMPDEF"`
+        TMPUPDATEURL=`singularity_key_get "UpdateURL" "$SINGULARITY_TMPDEF"`
+        TMPINCLUDES=`singularity_keys_get "Include" "$SINGULARITY_TMPDEF"`
+        TMPSETUP=`singularity_section_get "setup" "$SINGULARITY_TMPDEF"`
+        TMPRUN=`singularity_section_get "runscript" "$SINGULARITY_TMPDEF"`
+        TMPPOST=`singularity_section_get "post" "$SINGULARITY_TMPDEF"`
+        TMPTEST=`singularity_section_get "test" "$SINGULARITY_TMPDEF"`
+        
+        # BootStrap system and OS version are only used from the child definition if they
+        # don't exist already
+        if ! [ -n "$SINGULARITY_TMPBOOTSTRAP" ]; then
+            SINGULARITY_BOOTSTRAP=`singularity_key_get "BootStrap" "$SINGULARITY_BUILDDEF"`
+        else
+            SINGULARITY_BOOTSTRAP="$SINGULARITY_TMPBOOTSTRAP"
+        fi
+
+        if ! [ -n "$TMPOSVERSION" ]; then
+            OSVERSION=`singularity_key_get "OSVersion" "$SINGULARITY_BUILDDEF"`
+        else
+            OSVERSION="$TMPOSVERSION"
+        fi
+
+        MIRROR=`singularity_key_get "MirrorURL" "$SINGULARITY_BUILDDEF"`
+        if ! [ -n "$MIRROR" ]; then
+            if [ -n "$TMPMIRROR" ]; then
+                MIRROR="$TMPMIRROR"
+            fi
+        fi
+        UPDATEURL=`singularity_key_get "UpdateURL" "$SINGULARITY_BUILDDEF"`
+        if ! [ -n "$UPDATEURL" ]; then
+            if [ -n "$TMPUPDATEURL" ]; then
+                UPDATEURL="$TMPUPDATEURL"
+            fi
+        fi
+        INCLUDES=`singularity_key_get "Include" "$SINGULARITY_BUILDDEF"`
+        INCLUDES="$TMPINCLUDES $INCLUDES"
+
+        SETUP=`singularity_section_get "setup" "$SINGULARITY_BUILDDEF"`
+        RUN=`singularity_section_get "runscript" "$SINGULARITY_BUILDDEF"`
+        POST=`singularity_section_get "post" "$SINGULARITY_BUILDDEF"`
+        TEST=`singularity_section_get "test" "$SINGULARITY_BUILDDEF"`
+        SETUP="$TMPSETUP\n$SETUP"
+        RUN="$TMPRUN\n$RUN"
+        POST="$TMPPOST\n$POST"
+        TEST="$TMPTEST\n$TEST"
+        > $SINGULARITY_TMPDEF
+        echo "BootStrap: $SINGULARITY_BOOTSTRAP" >> $SINGULARITY_TMPDEF
+        echo "OSVersion: $OSVERSION" >> $SINGULARITY_TMPDEF
+        echo "MirrorURL: $MIRROR" >> $SINGULARITY_TMPDEF
+        echo "UpdateURL: $UPDATEURL" >> $SINGULARITY_TMPDEF
+        echo "Include: $INCLUDES" >> $SINGULARITY_TMPDEF
+        echo -e "%runscript" >> $SINGULARITY_TMPDEF
+        echo -e "$RUN" >> $SINGULARITY_TMPDEF
+        echo "%post" >> $SINGULARITY_TMPDEF
+        echo -e "$POST" >> $SINGULARITY_TMPDEF
+>>>>>>> cae0a0cb23e3ef922ceb76b4d2c590fb06207e75
     else
         message ERROR "Build Definition file not found: $SINGULARITY_BUILDDEF\n"
         exit 1
