@@ -52,6 +52,8 @@ fi
 DEBIAN_FRONTEND=noninteractive
 export LC_ALL LANG TERM DEBIAN_FRONTEND
 
+KEYWORDS="BootStrap OSVersion MirrorURL UpdateURL Include"
+
 if [ -n "$1" ]; then
     SINGULARITY_BUILDDEF="$1"
 else
@@ -123,8 +125,10 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
                     exit 1
                 fi
             done
+            awk '/^ *BootStrap: *.*/ && count++ {sub("^ *BootStrap: *.*","")}{print}' "$SINGULARITY_TMPDEF" > tmp && \
+            mv tmp $SINGULARITY_TMPDEF
         else
-            message ERROR "No BootStrap "
+            message ERROR "No BootStrap keyword"
         fi
 
         OSVERSION=`sed -n -e 's/OSVersion:\ //g' "$SINGULARITY_TMPDEF"|sort|uniq`
@@ -138,19 +142,30 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
                     exit 1
                 fi
             done
+            awk '/^ *OSVersion: *.*/ && count++ {sub("^ *OSVersion: *.*","")}{print}' "$SINGULARITY_TMPDEF" > tmp && \
+            mv tmp $SINGULARITY_TMPDEF
         fi
 
         MIRROR=`awk '/Mirror: /&&c++ {next} 1' "$SINGULARITY_TMPDEF"`
         if ! [ -n "$MIRROR" ]; then
             message ERROR "No mirror URL present in definition."
         fi
+        awk '/^ *MirrorURL: *.*/ && count++ {sub("^ *MirrorURL: *.*","")}{print}' "$SINGULARITY_TMPDEF" > tmp && \
+        mv tmp $SINGULARITY_TMPDEF
 
         UPDATEURL=`sed -n -e 's/UpdateURL:\ //g' "$SINGULARITY_TMPDEF"|sort|uniq`
+        awk '/^ *UpdateURL: *.*/ && count++ {sub("^ *UpdateURL: *.*","")}{print}' "$SINGULARITY_TMPDEF" > tmp && \
+        mv tmp $SINGULARITY_TMPDEF
 
-        DUPPKGS=`sed -n -e 's/Include:\ //g' "$SINGULARITY_TMPDEF"|sort|uniq -d`
+        DUPPKGS=`sed -n -e 's/Include:\ //gp' "$SINGULARITY_TMPDEF"|tr ' ' '\n'|sort|uniq|tr '\n' ' '`
+        awk '/^ *Include: *.*/ && count++ {sub("^ *Include: *.*","")}{print}' "$SINGULARITY_TMPDEF" > tmp && \
+        mv tmp $SINGULARITY_TMPDEF
+        echo $DUPPKGS
+        sed -i -e "s/^Include:.*/Include: $DUPPKGS/" "$SINGULARITY_TMPDEF"
         for PKG in $DUPPKGS
         do
-            message WARNING "Package $PKG is included multiple times"
+            echo $PKG
+#            message WARNING "Package $PKG is included multiple times"
         done
     else
         message ERROR "Build Definition file not found: $SINGULARITY_BUILDDEF\n"
