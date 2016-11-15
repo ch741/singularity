@@ -42,7 +42,7 @@ SINGULARITY_TMPDIR=`mktemp -d /tmp/singularity-bootstrap.XXXXXXX`
 # definitions all definitions are processed and collected into this.
 SINGULARITY_TMPDEF="${SINGULARITY_BUILDDEF}.tmp"
 # The inheritance list is used for avoiding cyclic inheritance.
-SINGULARITY_INHERITLIST=$SINGULARITY_BUILDDEF:$SINGULARITY_TMPDEF
+SINGULARITY_INHERITLIST=$SINGULARITY_BUILDDEF
 PATH=/bin:/sbin:$PATH
 HOME=/root
 RETVAL=0
