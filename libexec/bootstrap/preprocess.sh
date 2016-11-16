@@ -64,7 +64,7 @@ fi
 if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
     message 1 "Preprocessing bootstrap definition\n";
     if [ -f "$SINGULARITY_BUILDDEF" ]; then
-        INHERITLIST=`sed -n 's/^Inherit:\ *//p' $SINGULARITY_BUILDDEF`
+        INHERITLIST=`sed -n 's|^Inherit:\ *||p' $SINGULARITY_BUILDDEF`
         SINGULARITY_TMPDEF="${SINGULARITY_BUILDDEF}.tmp"
         cp $SINGULARITY_BUILDDEF $SINGULARITY_TMPDEF
         if [ -n "$INHERITLIST" ]; then
@@ -103,7 +103,7 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
                    next
                    }
                    {print}' $SINGULARITY_TMPDEF > tmp && \
-                sed -i -e "s/^Inherit: $INHERIT//g" -e '/^#.*/d' -e '/^ *$/d' tmp && \
+                sed -i -e "s|^Inherit: $INHERIT||g" -e '/^#.*/d' -e '/^ *$/d' tmp && \
                 mv tmp $SINGULARITY_TMPDEF
             done
         fi
@@ -162,11 +162,6 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
         mv tmp $SINGULARITY_TMPDEF
         echo $DUPPKGS
         sed -i -e "s/^Include:.*/Include: $DUPPKGS/" "$SINGULARITY_TMPDEF"
-        for PKG in $DUPPKGS
-        do
-            echo $PKG
-#            message WARNING "Package $PKG is included multiple times"
-        done
     else
         message ERROR "Build Definition file not found: $SINGULARITY_BUILDDEF\n"
         exit 1
