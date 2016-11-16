@@ -64,7 +64,7 @@ fi
 if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
     message 1 "Preprocessing bootstrap definition\n";
     if [ -f "$SINGULARITY_BUILDDEF" ]; then
-        INHERITLIST=`sed -n 's|^Inherit:\ *||p' $SINGULARITY_BUILDDEF`
+        INHERITLIST=`sed -n -e 's|^Inherit:\ *||p' $SINGULARITY_BUILDDEF`
         SINGULARITY_TMPDEF="${SINGULARITY_BUILDDEF}.tmp"
         cp $SINGULARITY_BUILDDEF $SINGULARITY_TMPDEF
         if [ -n "$INHERITLIST" ]; then
