@@ -86,17 +86,20 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
                     REMOTEDEF="remote.def"
                     if [ -f $REMOTEDEF ]; then
                         eval "$0" "$REMOTEDEF"
+                        INHERITDEF="$REMOTEDEF"
                     else
                         message ERROR "Remote definition failed to download"
                         exit 1
                     fi
                 elif [ -f $INHERIT ]; then
                     eval "$0" "$INHERIT"
+                    INHERITDEF="$INHERIT"
                 else
                     message ERROR "Definition is not a valid URL or file."
                     exit 1
                 fi
-                awk -v awkin="$INHERIT" '$0 ~ awkin {
+                TMPDEF="$INHERITDEF.tmp"
+                awk -v infile="$INHERIT" -v awkin="$TMPDEF" '$0 ~ infile {
                    print $0
                    while((getline line<awkin )>0)
                        {print line}
@@ -160,7 +163,6 @@ if [ -n "${SINGULARITY_BUILDDEF:-}" ]; then
         DUPPKGS=`sed -n -e 's/Include:\ //gp' "$SINGULARITY_TMPDEF"|tr ' ' '\n'|sort|uniq|tr '\n' ' '`
         awk '/^ *Include: *.*/ && count++ {sub("^ *Include: *.*","")}{print}' "$SINGULARITY_TMPDEF" > tmp && \
         mv tmp $SINGULARITY_TMPDEF
-        echo $DUPPKGS
         sed -i -e "s/^Include:.*/Include: $DUPPKGS/" "$SINGULARITY_TMPDEF"
     else
         message ERROR "Build Definition file not found: $SINGULARITY_BUILDDEF\n"
